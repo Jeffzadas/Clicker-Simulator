@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Clicker com 5 Upgrades</title>
+<style>
+  :root{
+    --bg: #0f1220;
+    --panel:#181c2f;
+    --accent:#7c5cff;
+    --accent-2:#4ee1a0;
+    --text:#e9ebf1;
+    --muted:#a8adc2;
+    --danger:#ff6b6b;
+    --gold:#ffd166;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    background: radial-gradient(1200px 600px at 10% 0%, #12162a 0%, var(--bg) 60%);
+    color:var(--text);
+    min-height:100dvh;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .wrap{
+    width:min(100%, 980px);
+    padding:18px;
+    display:grid; gap:18px;
+    grid-template-columns: 1.1fr 1fr;
+  }
+  @media (max-width: 820px){
+    .wrap{ grid-template-columns: 1fr; }
+  }
+  .card{
+    background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:14px;
+    padding:18px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.25);
+  }
+  .top{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+  }
+  .stat{
+    background:var(--panel); padding:12px 14px; border-radius:10px; border:1px solid rgba(255,255,255,0.06);
+    display:flex; gap:10px; align-items:center; min-width: 180px;
+  }
+  .stat small{ color:var(--muted); display:block; font-weight:600; letter-spacing:.4px;}
+  .stat strong{ font-size:1.4rem; }
+  .main{
+    display:grid; gap:18px; align-content:start;
+  }
+  .click-area{
+    text-align:center; padding:18px 10px;
+  }
+  .btn-big{
+    -webkit-tap-highlight-color: transparent;
+    user-select:none;
+    width:min(100%, 520px);
+    height: 220px;
+    border-radius:18px;
+    border:0;
+    background: conic-gradient(from 0deg at 50% 50%, #272c4a, #232845, #252a48);
+    color:var(--text);
+    font-size:2rem; font-weight:800;
+    letter-spacing:.5px;
+    cursor:pointer;
+    box-shadow: inset 0 -6px 18px rgba(0,0,0,.35), 0 14px 32px rgba(0,0,0,.25);
+    transition: transform .04s ease, box-shadow .2s ease;
+    position:relative;
+    overflow:hidden;
+  }
+  .btn-big:active{ transform: scale(.985); }
+  .btn-big .pulse{
+    position:absolute; inset:0; background: radial-gradient(400px 160px at var(--x) var(--y), rgba(124,92,255,.25), transparent 60%);
+    pointer-events:none; transition: opacity .25s;
+  }
+  .crit{
+    position:absolute; left:50%; top:0; transform:translate(-50%,-30px);
+    background:linear-gradient(90deg, var(--gold), #ffa94d);
+    color:#1b1200; border-radius:999px; padding:6px 12px; font-weight:900; font-size:1rem;
+    box-shadow:0 8px 20px rgba(255,209,102,.25); opacity:0; transition: .25s; pointer-events:none;
+  }
+  .crit.show{ top:-8px; opacity:1; }
+  .grid{
+    display:grid; gap:12px;
+  }
+  .upg{
+    display:grid; grid-template-columns: auto 1fr auto; gap:12px; align-items:center;
+    background: var(--panel);
+    border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:12px;
+  }
+  .upg h4{ margin:0 0 4px 0; }
+  .upg p{ margin:0; color:var(--muted); font-size:.92rem; }
+  .price{
+    text-align:right;
+  }
+  .price strong{ display:block; }
+  .buy{
+    border:0; border-radius:10px; padding:10px 12px; font-weight:800;
+    color:#0e0d16; cursor:pointer;
+    background:linear-gradient(180deg, var(--accent), #684aff);
+    box-shadow:0 6px 16px rgba(124,92,255,.35);
+    transition: filter .15s, transform .04s;
+  }
+  .buy:active{ transform: translateY(1px); }
+  .buy.disabled{ filter: grayscale(1) brightness(.7); cursor:not-allowed; }
+  .row{
+    display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between;
+  }
+  .muted{ color:var(--muted); }
+  .tag{
+    background: rgba(78,225,160,.1);
+    color: var(--accent-2);
+    font-weight:800;
+    font-size:.8rem;
+    padding:4px 8px; border-radius:999px; border:1px solid rgba(78,225,160,.35);
+  }
+  .danger{ color:var(--danger); }
+  .footer{
+    display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:12px;
+  }
+  .icon{
+    width:38px; height:38px; border-radius:10px; display:grid; place-items:center;
+    background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+    border:1px solid rgba(255,255,255,.08);
+    font-weight:900; color:var(--gold);
+  }
+  .kbd{
+    background:#111424; color:#d9dcff; padding:2px 6px; border:1px solid #2c3154; border-radius:6px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:.85rem;
+  }
+  .small{ font-size:.9rem; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <!-- Painel principal -->
+    <section class="card main">
+      <div class="top">
+        <div class="stat">
+          <div class="icon">★</div>
+          <div>
+            <small>CLICKS</small>
+            <strong id="coins">0</strong>
+          </div>
+        </div>
+        <div class="stat">
+          <div class="icon" style="color:#7c5cff">⚡</div>
+          <div>
+            <small>CLIQUE</small>
+            <strong id="perClick">+1</strong>
+          </div>
+        </div>
+        <div class="stat">
+          <div class="icon" style="color:#4ee1a0">⏱</div>
+          <div>
+            <small>CPS</small>
+            <strong id="cps">0</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="click-area">
+        <button id="clickBtn" class="btn-big" aria-label="Clique para ganhar pontos">
+          <div class="pulse"></div>
+          CLIQUE AQUI
+          <div id="critTag" class="crit">CRÍTICO!</div>
+        </button>
+        <p class="muted small" style="margin-top:10px">Dica: use <span class="kbd">Barra de Espaço</span> para clicar.</p>
+      </div>
+
+      <div class="row">
+        <div><span class="tag" id="multTag">Multiplicador: x1.00</span></div>
+        <div class="muted small">Salva automaticamente • <button id="reset" class="buy" style="background:linear-gradient(180deg,#ff8585,#ff6b6b); box-shadow:0 6px 16px rgba(255,107,107,.35);">Reset</button></div>
+      </div>
+    </section>
+
+    <!-- Upgrades -->
+    <section class="card">
+      <h3 style="margin:0 0 10px 0;">Loja de Upgrades</h3>
+      <div class="grid" id="shop"></div>
+      <div class="footer">
+        <span class="muted small">Passe o mouse para ver a descrição.</span>
+        <span class="small">Compras sobem de preço (x1.15–x1.25).</span>
+      </div>
+    </section>
+  </div>
+
+<script>
+(function(){
+  // ----- Estado do jogo -----
+  const state = {
+    coins: 0,
+    baseClick: 1,
+    clickPower: 1,      // soma sobre a base
+    multiplier: 1,
+    cps1: 0,            // Auto-Clickers
+    cps2: 0,            // Fábricas
+    critChance: 0.02,   // 2% inicial
+    critMulti: 10,
+    lastSave: Date.now()
+  };
+
+  // ----- Definições dos Upgrades (5 no total) -----
+  const upgrades = [
+    {
+      id: 'click',
+      name: 'Dedo Forte',
+      desc: '+1 de poder por clique por compra.',
+      icon: '🖱️',
+      level: 0,
+      baseCost: 25,
+      growth: 1.15,
+      buy(){
+        state.clickPower += 1;
+      }
+    },
+    {
+      id: 'auto',
+      name: 'Auto-Clicker',
+      desc: '+0.5 cliques por segundo (CPS) por compra.',
+      icon: '🤖',
+      level: 0,
+      baseCost: 60,
+      growth: 1.18,
+      buy(){
+        state.cps1 += 0.5;
+      }
+    },
+    {
+      id: 'factory',
+      name: 'Fábrica de Cliques',
+      desc: '+3 CPS por compra.',
+      icon: '🏭',
+      level: 0,
+      baseCost: 350,
+      growth: 1.22,
+      buy(){
+        state.cps2 += 3;
+      }
+    },
+    {
+      id: 'multi',
+      name: 'Multiplicador Global',
+      desc: '+0.10x ao multiplicador total por compra.',
+      icon: '✖️',
+      level: 0,
+      baseCost: 200,
+      growth: 1.25,
+      buy(){
+        state.multiplier = +(state.multiplier + 0.10).toFixed(2);
+        updateMultTag();
+      }
+    },
+    {
+      id: 'crit',
+      name: 'Chance Crítica',
+      desc: '+1% de chance crítica (x10) por compra.',
+      icon: '🎯',
+      level: 0,
+      baseCost: 150,
+      growth: 1.2,
+      buy(){
+        state.critChance = Math.min(0.95, state.critChance + 0.01);
+      }
+    }
+  ];
+
+  // ----- Utilidades -----
+  const $ = sel => document.querySelector(sel);
+  const elCoins = $('#coins');
+  const elPerClick = $('#perClick');
+  const elCps = $('#cps');
+  const elShop = $('#shop');
+  const elBtn = $('#clickBtn');
+  const elPulse = elBtn.querySelector('.pulse');
+  const elCrit = $('#critTag');
+  const elReset = $('#reset');
+  const elMultTag = $('#multTag');
+
+  function fmt(n){
+    if(n >= 1e12) return (n/1e12).toFixed(2) + 'T';
+    if(n >= 1e9) return (n/1e9).toFixed(2) + 'B';
+    if(n >= 1e6) return (n/1e6).toFixed(2) + 'M';
+    if(n >= 1e3) return (n/1e3).toFixed(2) + 'k';
+    return Math.floor(n).toString();
+  }
+  function fmtDec(n){
+    return (Math.round(n*100)/100).toFixed(2);
+  }
+  function totalCPS(){
+    return (state.cps1 + state.cps2) * state.multiplier;
+  }
+  function perClick(){
+    return (state.baseClick + state.clickPower) * state.multiplier;
+  }
+  function updateHUD(){
+    elCoins.textContent = fmt(Math.floor(state.coins));
+    elPerClick.textContent = '+' + fmtDec(perClick());
+    elCps.textContent = fmtDec(totalCPS());
+    document.title = `Clicks: ${fmt(Math.floor(state.coins))} • CPS ${fmtDec(totalCPS())}`;
+    updateButtons();
+  }
+  function updateMultTag(){
+    elMultTag.textContent = `Multiplicador: x${state.multiplier.toFixed(2)}`;
+  }
+
+  // ----- Loja -----
+  function costOf(u){
+    return Math.floor(u.baseCost * Math.pow(u.growth, u.level));
+  }
+  function renderShop(){
+    elShop.innerHTML = '';
+    upgrades.forEach(u=>{
+      const cost = costOf(u);
+      const row = document.createElement('div');
+      row.className = 'upg';
+      row.innerHTML = `
+        <div class="icon">${u.icon}</div>
+        <div>
+          <h4>${u.name} <span class="muted">Nível ${u.level}</span></h4>
+          <p title="${u.desc}">${u.desc}</p>
+        </div>
+        <div class="price">
+          <strong id="cost-${u.id}">${fmt(cost)}</strong>
+          <button class="buy" id="buy-${u.id}">Comprar</button>
+        </div>
+      `;
+      elShop.appendChild(row);
+      row.querySelector(`#buy-${u.id}`).addEventListener('click', ()=>buy(u.id));
+    });
+    updateButtons();
+  }
+  function updateButtons(){
+    upgrades.forEach(u=>{
+      const cost = costOf(u);
+      const btn = document.getElementById(`buy-${u.id}`);
+      const costEl = document.getElementById(`cost-${u.id}`);
+      if(!btn || !costEl) return;
+      costEl.textContent = fmt(cost);
+      if(state.coins >= cost){
+        btn.classList.remove('disabled');
+        btn.disabled = false;
+      } else {
+        btn.classList.add('disabled');
+        btn.disabled = true;
+      }
+    });
+  }
+  function buy(id){
+    const u = upgrades.find(x=>x.id===id);
+    const cost = costOf(u);
+    if(state.coins < cost) return;
+    state.coins -= cost;
+    u.level++;
+    u.buy();
+    updateHUD();
+    save();
+  }
+
+  // ----- Clique -----
+  function clickOnce(critCheck=true){
+    let amount = perClick();
+    let isCrit = false;
+    if(critCheck && Math.random() < state.critChance){
+      amount *= state.critMulti;
+      isCrit = true;
+    }
+    state.coins += amount;
+    showCrit(isCrit);
+    updateHUD();
+  }
+  function showCrit(on){
+    if(on){
+      elCrit.classList.add('show');
+      clearTimeout(showCrit._t);
+      showCrit._t = setTimeout(()=>elCrit.classList.remove('show'), 400);
+      elBtn.animate([{transform:'translateY(0)'},{transform:'translateY(-4px)'},{transform:'translateY(0)'}], {duration:250});
+    }
+  }
+
+  // ----- Loop de jogo -----
+  let acc = 0;
+  const TICK = 50; // ms
+  setInterval(()=>{
+    const cps = totalCPS();
+    acc += cps * (TICK/1000);
+    if(acc >= 1){
+      const add = Math.floor(acc);
+      state.coins += add;
+      acc -= add;
+      updateHUD();
+    }
+    // auto-save a cada 3s
+    if(Date.now() - state.lastSave > 3000){
+      save();
+    }
+  }, TICK);
+
+  // ----- UI Interações -----
+  elBtn.addEventListener('click', (e)=>{
+    // efeito de ponto de luz
+    const rect = elBtn.getBoundingClientRect();
+    elPulse.style.setProperty('--x', (e.clientX - rect.left) + 'px');
+    elPulse.style.setProperty('--y', (e.clientY - rect.top) + 'px');
+    elPulse.style.opacity = .9;
+    clearTimeout(elBtn._pt);
+    elBtn._pt = setTimeout(()=>{ elPulse.style.opacity = 0.2; }, 120);
+
+    clickOnce(true);
+  });
+  // Suporte à tecla espaço
+  window.addEventListener('keydown', (e)=>{
+    if(e.code === 'Space'){
+      e.preventDefault();
+      clickOnce(true);
+    }
+  });
+
+  // ----- Save / Load -----
+  const KEY = 'clicker5.save.v1';
+  function save(){
+    state.lastSave = Date.now();
+    const data = {
+      s: state,
+      u: upgrades.map(u=>({id:u.id, level:u.level}))
+    };
+    localStorage.setItem(KEY, JSON.stringify(data));
+  }
+  function load(){
+    const raw = localStorage.getItem(KEY);
+    if(!raw) return;
+    try{
+      const data = JSON.parse(raw);
+      Object.assign(state, data.s || {});
+      // restaurar níveis e efeitos
+      if(Array.isArray(data.u)){
+        // zera antes de reaplicar
+        upgrades.forEach(u=>{
+          u.level = 0;
+        });
+        // recomputa efeitos a partir de níveis
+        upgrades.forEach(u=>{
+          const saved = data.u.find(x=>x.id===u.id);
+          if(saved){
+            for(let i=0;i<saved.level;i++){
+              u.level++;
+              u.buy();
+            }
+          }
+        });
+      }
+    }catch(e){
+      console.warn('Falha ao carregar save:', e);
+    }
+  }
+  $('#reset').addEventListener('click', ()=>{
+    if(confirm('Resetar o progresso? Isso não pode ser desfeito.')){
+      localStorage.removeItem(KEY);
+      location.reload();
+    }
+  });
+
+  // ----- Inicialização -----
+  load();
+  renderShop();
+  updateMultTag();
+  updateHUD();
+
+})();
+</script>
+</body>
+</html>
